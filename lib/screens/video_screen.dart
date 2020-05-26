@@ -47,51 +47,40 @@ class VideoScreenState extends State<VideoScreen> {
 
   @override
   void initState() {
+    _getPlayUrl().then((data) {
+      _controller = VideoPlayerController.network(data.videoUrl);
+      _controller.addListener(() {
+        setState(() {});
+      });
+      _initializeVideoPlayerFuture = _controller.initialize();
+      _initializeVideoPlayerFuture.then((_) => setState(() {}));
+    });
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: _getPlayUrl(),
-        builder: (BuildContext context, AsyncSnapshot<VideoModel> snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            if (snapshot.hasError) {
-              // 请求失败，显示错误
-              return Text("Error: ${snapshot.error}");
-            } else {
-              _controller =
-                  VideoPlayerController.network(snapshot.data.videoUrl);
-              _initializeVideoPlayerFuture = _controller.initialize();
-              // 请求成功，显示数据
-              return Scaffold(
-                  body: FutureBuilder(
-                future: _initializeVideoPlayerFuture,
-                builder: (BuildContext context, AsyncSnapshot snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    return AspectRatio(
-                      aspectRatio: _controller.value.aspectRatio,
-                      child: Stack(
-                        alignment: Alignment.bottomCenter,
-                        children: <Widget>[
-                          VideoPlayer(_controller),
-                          PlayPauseOverlay(controller: _controller),
-                          VideoProgressIndicator(_controller,
-                              allowScrubbing: true),
-                        ],
-                      ),
-                    );
-                  } else {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                },
-              ));
-            }
-          } else {
-            // 请求未结束，显示loading
-            return Scaffold(body: Center(child: CircularProgressIndicator()));
-          }
-        });
+    return Scaffold(
+        body: FutureBuilder(
+      future: _initializeVideoPlayerFuture,
+      builder: (BuildContext context, AsyncSnapshot snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return AspectRatio(
+            aspectRatio: _controller.value.aspectRatio,
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              children: <Widget>[
+                VideoPlayer(_controller),
+                PlayPauseOverlay(controller: _controller),
+                VideoProgressIndicator(_controller, allowScrubbing: true),
+              ],
+            ),
+          );
+        } else {
+          return Center(child: CircularProgressIndicator());
+        }
+      },
+    ));
   }
 
   @override
